@@ -15,9 +15,9 @@ export class VisionAI {
     );
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash-lite",
     });
-    console.log("Vision AI model initialized:", "gemini-1.5-flash");
+    console.log("Vision AI model initialized:", "gemini-2.5-flash-lite");
   }
 
   async analyzeImage(imageFile: File): Promise<ImageAnalysisResult> {

@@ -23,19 +23,19 @@ The AssemblyAI integration is located in `src/integrations/assemblyai/index.ts`.
    // Example: Recording audio
    const mediaRecorder = new MediaRecorder(stream);
    const audioChunks = [];
-   
+
    mediaRecorder.ondataavailable = (event) => {
      if (event.data.size > 0) {
        audioChunks.push(event.data);
      }
    };
-   
+
    mediaRecorder.onstop = async () => {
      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
      const result = await transcribeAudio(audioBlob, 'en');
      console.log(result.text); // Transcribed text
    };
-   
+
    mediaRecorder.start();
    // Later, call mediaRecorder.stop() to end recording
    ```
@@ -59,9 +59,9 @@ To add a new voice recognition feature:
          },
          body: audioBlob
        });
-       
+
        // Add your custom implementation here...
-       
+
        return { /* your response data */ };
      } catch (error) {
        console.error("Error with custom voice feature:", error);
@@ -108,24 +108,24 @@ To add a new AI feature:
      language: 'en' | 'hi'
    ): Promise<SomeResponseType> {
      try {
-       const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
-       
-       const languageInstruction = language === 'en' 
-         ? "Please respond in English." 
+       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+       const languageInstruction = language === 'en'
+         ? "Please respond in English."
          : "कृपया हिंदी में जवाब दें।";
-       
+
        const prompt = `Your prompt instructions here...
-       
+
        User input: "${input}"
-       
+
        ${languageInstruction}`;
-       
+
        const result = await model.generateContent(prompt);
        const response = await result.response;
        const text = response.text();
-       
+
        // Process the response as needed
-       
+
        return { /* your response data */ };
      } catch (error) {
        console.error("Error calling Gemini API:", error);
@@ -164,16 +164,16 @@ To add a new weather feature:
      try {
        const API_KEY = "02ec49771af24aaa8e890937251204";
        const url = `https://api.weatherapi.com/v1/some-endpoint?key=${API_KEY}&q=${encodeURIComponent(location)}&additional-params`;
-       
+
        const response = await fetch(url);
        const data = await response.json();
-       
+
        if (data.error) {
          throw new Error(data.error.message);
        }
-       
+
        // Process the data as needed
-       
+
        return { /* your response data */ };
      } catch (error) {
        console.error("Error fetching weather data:", error);
@@ -249,7 +249,7 @@ const VoiceComponent: React.FC<VoiceComponentProps> = ({ language }) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      
+
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
@@ -258,18 +258,18 @@ const VoiceComponent: React.FC<VoiceComponentProps> = ({ language }) => {
 
   const processRecording = async () => {
     setIsProcessing(true);
-    
+
     try {
       // Create audio blob from chunks
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      
+
       // Use AssemblyAI to transcribe audio
       const transcriptionResult = await transcribeAudio(audioBlob, language);
-      
+
       if (transcriptionResult.error) {
         throw new Error(transcriptionResult.error);
       }
-      
+
       if (!transcriptionResult.text.trim()) {
         throw new Error('No speech detected');
       }
@@ -292,4 +292,4 @@ const VoiceComponent: React.FC<VoiceComponentProps> = ({ language }) => {
 };
 
 export default VoiceComponent;
-``` 
+```

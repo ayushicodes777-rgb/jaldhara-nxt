@@ -84,7 +84,8 @@ interface PDFShiftResponse {
 const GEMINI_API_KEY =
   import.meta.env.VITE_GEMINI_API_KEY ||
   "AIzaSyC9TajWNNnnW5ovh64QYMfGffg0KxUfkh4";
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
+const GEMINI_MODEL =
+  import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash-lite";
 const PDFSHIFT_API_KEY =
   import.meta.env.VITE_PDFSHIFT_API_KEY ||
   "sk_09d22ed471315d28c26eb187d6eaf63ab9ee9ca7";
