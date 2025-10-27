@@ -48,8 +48,8 @@ export const languageNames: Record<SupportedLanguage, string> = {
 
 // Footer translations
 export const footerText: Record<SupportedLanguage, string> = {
-  en: "© 2025 JalDhara - AI-Powered Water Management Assistant",
-  hi: "© 2025 जलधारा - AI-संचालित जल प्रबंधन सहायक",
+  en: "© 2025 FarmGPT - AI-Powered Farm Management Assistant",
+  hi: "© 2025 फार्मजीपीटी - AI-संचालित खेत प्रबंधन सहायक",
   bn: "© 2025 জলধারা - AI-পাওয়ার্ড জল ব্যবস্থাপনা সহকারী",
   mr: "© 2025 जलधारा - AI-संचालित पाणी व्यवस्थापन सहाय्यक",
   te: "© 2025 జల్దర - AI-పవర్డ్ నీటి నిర్వహణ సహాయకుడు",

@@ -1,16 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as SonnerPrimitive from "sonner"
+import * as React from "react";
+import * as SonnerPrimitive from "sonner";
 
-type ToasterProps = React.ComponentPropsWithoutRef<typeof SonnerPrimitive.Toaster>
+type ToasterProps = React.ComponentPropsWithoutRef<
+  typeof SonnerPrimitive.Toaster
+>;
 
 const Toaster = React.forwardRef<
   React.ElementRef<typeof SonnerPrimitive.Toaster>,
   ToasterProps
->(({ ...props }) => {
+>(({ ...props }, ref) => {
   return (
     <SonnerPrimitive.Toaster
+      ref={ref}
       className="toaster group"
       toastOptions={{
         classNames: {
@@ -25,10 +28,8 @@ const Toaster = React.forwardRef<
       }}
       {...props}
     />
-  )
-})
-Toaster.displayName = SonnerPrimitive.Toaster.displayName
+  );
+});
+Toaster.displayName = SonnerPrimitive.Toaster.displayName;
 
-export {
-  Toaster,
-}
+export { Toaster };
