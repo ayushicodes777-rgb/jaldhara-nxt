@@ -64,8 +64,8 @@ const Header: React.FC<HeaderProps> = memo(
               <Sprout className="h-6 w-6 text-earth" />
             </div>
             <h1 className="text-xl font-bold">
-              <span className="text-water">Farm</span>
-              <span className="text-earth">GPT</span>
+              <span className="text-earth">Farm</span>
+              <span className="text-water">GPT</span>
             </h1>
           </div>
 
