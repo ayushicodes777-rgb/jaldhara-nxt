@@ -142,11 +142,11 @@ const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
               <h1 className="text-5xl font-bold mb-3 tracking-tight">
-                <span className="text-water bg-gradient-to-r from-water to-blue-500 bg-clip-text text-transparent">
-                  {activeContent.title.split(" ")[0].substring(0, 3)}
-                </span>
                 <span className="text-earth bg-gradient-to-r from-earth to-green-500 bg-clip-text text-transparent">
-                  {activeContent.title.split(" ")[0].substring(3)}
+                  {activeContent.title.split(" ")[0].substring(0, 4)}
+                </span>
+                <span className="text-water bg-gradient-to-r from-water to-blue-500 bg-clip-text text-transparent">
+                  {activeContent.title.split(" ")[0].substring(4)}
                 </span>
                 {activeContent.title.split(" ").length > 1 && (
                   <>
