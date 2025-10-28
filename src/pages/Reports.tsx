@@ -9,8 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Download,
-  Printer,
-  Share2,
   Loader2,
   Mic,
   Calendar,
@@ -43,6 +41,8 @@ import {
   initSpeechRecognition,
   isSpeechRecognitionAvailable,
 } from "@/integrations/speech/speech-recognition";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface ReportsProps {
   language: SupportedLanguage;
@@ -58,7 +58,6 @@ interface ReportsProps {
 interface FarmData {
   cropTypes: string[];
   soilType: string;
-  farmSize: string;
   irrigationAmount?: string;
 }
 
@@ -220,7 +219,6 @@ const Reports: React.FC<ReportsProps> = ({
   const [farmData, setFarmData] = useState<FarmData>({
     cropTypes: [],
     soilType: "",
-    farmSize: "",
     irrigationAmount: "",
   });
 
@@ -256,24 +254,324 @@ const Reports: React.FC<ReportsProps> = ({
   const [imageAnalyses, setImageAnalyses] = useState<ImageAnalysisResult[]>([]);
   const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
 
-  // Sample water usage data for visualization
-  const [waterData, setWaterData] = useState([
-    {
-      name: normalizedLanguage === "en" ? "Rice" : "चावल",
+  // Crop water usage database (liters per hectare per season)
+  const cropWaterDatabase: Record<
+    string,
+    { current: number; recommended: number; hiName: string; enName: string }
+  > = {
+    // Rice crops
+    rice: {
+      current: 25000,
+      recommended: 18000,
+      hiName: "चावल",
+      enName: "Rice",
+    },
+    basmati: {
+      current: 22000,
+      recommended: 16000,
+      hiName: "बासमती चावल",
+      enName: "Basmati Rice",
+    },
+
+    // Wheat crops
+    wheat: {
       current: 4500,
       recommended: 3200,
+      hiName: "गेहूं",
+      enName: "Wheat",
     },
-    {
-      name: normalizedLanguage === "en" ? "Wheat" : "गेहूं",
-      current: 2300,
-      recommended: 1800,
+    durum: {
+      current: 4800,
+      recommended: 3400,
+      hiName: "दुरम गेहूं",
+      enName: "Durum Wheat",
     },
-    {
-      name: normalizedLanguage === "en" ? "Total" : "कुल",
+
+    // Millets (water-efficient)
+    bajra: {
+      current: 3500,
+      recommended: 2800,
+      hiName: "बाजरा",
+      enName: "Pearl Millet",
+    },
+    jowar: {
+      current: 3800,
+      recommended: 3000,
+      hiName: "ज्वार",
+      enName: "Sorghum",
+    },
+    ragi: {
+      current: 3200,
+      recommended: 2600,
+      hiName: "रागी",
+      enName: "Finger Millet",
+    },
+
+    // Pulses (water-efficient)
+    chickpea: {
+      current: 2800,
+      recommended: 2200,
+      hiName: "चना",
+      enName: "Chickpea",
+    },
+    pigeonpea: {
+      current: 3200,
+      recommended: 2500,
+      hiName: "अरहर",
+      enName: "Pigeon Pea",
+    },
+    lentil: {
+      current: 2600,
+      recommended: 2000,
+      hiName: "मसूर",
+      enName: "Lentil",
+    },
+    greengram: {
+      current: 2400,
+      recommended: 1900,
+      hiName: "मूंग",
+      enName: "Green Gram",
+    },
+    blackgram: {
+      current: 2500,
+      recommended: 1950,
+      hiName: "उड़द",
+      enName: "Black Gram",
+    },
+
+    // Oilseeds
+    mustard: {
+      current: 3000,
+      recommended: 2300,
+      hiName: "सरसों",
+      enName: "Mustard",
+    },
+    groundnut: {
+      current: 4200,
+      recommended: 3200,
+      hiName: "मूंगफली",
+      enName: "Groundnut",
+    },
+    soybean: {
+      current: 3800,
+      recommended: 2900,
+      hiName: "सोयाबीन",
+      enName: "Soybean",
+    },
+    sesame: {
+      current: 2900,
+      recommended: 2200,
+      hiName: "तिल",
+      enName: "Sesame",
+    },
+
+    // Vegetables
+    tomato: {
+      current: 5500,
+      recommended: 4000,
+      hiName: "टमाटर",
+      enName: "Tomato",
+    },
+    potato: {
+      current: 4800,
+      recommended: 3600,
+      hiName: "आलू",
+      enName: "Potato",
+    },
+    onion: {
+      current: 4200,
+      recommended: 3200,
+      hiName: "प्याज",
+      enName: "Onion",
+    },
+    brinjal: {
+      current: 4600,
+      recommended: 3500,
+      hiName: "बैंगन",
+      enName: "Brinjal",
+    },
+    cauliflower: {
+      current: 5100,
+      recommended: 3800,
+      hiName: "फूलगोभी",
+      enName: "Cauliflower",
+    },
+    cabbage: {
+      current: 4500,
+      recommended: 3400,
+      hiName: "पत्ता गोभी",
+      enName: "Cabbage",
+    },
+    ladyfinger: {
+      current: 4800,
+      recommended: 3600,
+      hiName: "भिंडी",
+      enName: "Ladyfinger",
+    },
+
+    // Fruits
+    mango: { current: 8500, recommended: 6200, hiName: "आम", enName: "Mango" },
+    banana: {
+      current: 9200,
+      recommended: 6800,
+      hiName: "केला",
+      enName: "Banana",
+    },
+    guava: {
+      current: 7200,
+      recommended: 5400,
+      hiName: "अमरूद",
+      enName: "Guava",
+    },
+    papaya: {
       current: 6800,
       recommended: 5000,
+      hiName: "पपीता",
+      enName: "Papaya",
     },
-  ]);
+
+    // Sugarcane (high water usage)
+    sugarcane: {
+      current: 45000,
+      recommended: 35000,
+      hiName: "गन्ना",
+      enName: "Sugarcane",
+    },
+
+    // Cotton
+    cotton: {
+      current: 8500,
+      recommended: 6200,
+      hiName: "कपास",
+      enName: "Cotton",
+    },
+
+    // Spices
+    chili: {
+      current: 5200,
+      recommended: 3900,
+      hiName: "मिर्च",
+      enName: "Chili",
+    },
+    turmeric: {
+      current: 6800,
+      recommended: 5100,
+      hiName: "हल्दी",
+      enName: "Turmeric",
+    },
+    ginger: {
+      current: 7200,
+      recommended: 5400,
+      hiName: "अदरक",
+      enName: "Ginger",
+    },
+
+    // Others
+    maize: {
+      current: 4200,
+      recommended: 3200,
+      hiName: "मक्का",
+      enName: "Maize",
+    },
+    barley: {
+      current: 3200,
+      recommended: 2500,
+      hiName: "जौ",
+      enName: "Barley",
+    },
+  };
+
+  // Function to find crop data (case-insensitive search)
+  const findCropData = (cropName: string) => {
+    const lowerCropName = cropName.toLowerCase().trim();
+
+    // Direct match
+    if (cropWaterDatabase[lowerCropName]) {
+      return cropWaterDatabase[lowerCropName];
+    }
+
+    // Partial match for longer names
+    for (const [key, data] of Object.entries(cropWaterDatabase)) {
+      if (lowerCropName.includes(key) || key.includes(lowerCropName)) {
+        return data;
+      }
+    }
+
+    // Try common variations
+    const variations: Record<string, string> = {
+      rice: "rice",
+      paddy: "rice",
+      dhaan: "rice",
+      wheat: "wheat",
+      gehun: "wheat",
+      kanak: "wheat",
+      millet: "bajra",
+      pulse: "chickpea",
+      dal: "chickpea",
+      vegetable: "tomato",
+      phal: "mango",
+      fal: "mango",
+      sugar: "sugarcane",
+      ganna: "sugarcane",
+      kapas: "cotton",
+      mirch: "chili",
+      haldi: "turmeric",
+      makai: "maize",
+      corn: "maize",
+    };
+
+    for (const [variant, cropKey] of Object.entries(variations)) {
+      if (lowerCropName.includes(variant)) {
+        return cropWaterDatabase[cropKey];
+      }
+    }
+
+    // Default fallback
+    return {
+      current: 4000,
+      recommended: 3000,
+      hiName: cropName,
+      enName: cropName,
+    };
+  };
+
+  // Generate dynamic water usage data based on user's crops
+  const [waterData, setWaterData] = useState<any[]>([]);
+
+  // Update water data when crops change
+  useEffect(() => {
+    if (farmData.cropTypes.length > 0) {
+      const cropData = farmData.cropTypes.map((crop) => {
+        const cropInfo = findCropData(crop);
+        return {
+          name: normalizedLanguage === "hi" ? cropInfo.hiName : cropInfo.enName,
+          current: cropInfo.current,
+          recommended: cropInfo.recommended,
+        };
+      });
+
+      // Add total row
+      const totalCurrent = cropData.reduce(
+        (sum, crop) => sum + crop.current,
+        0,
+      );
+      const totalRecommended = cropData.reduce(
+        (sum, crop) => sum + crop.recommended,
+        0,
+      );
+
+      const finalData = [
+        ...cropData,
+        {
+          name: normalizedLanguage === "hi" ? "कुल" : "Total",
+          current: totalCurrent,
+          recommended: totalRecommended,
+        },
+      ];
+
+      setWaterData(finalData);
+    }
+  }, [farmData.cropTypes, normalizedLanguage]);
 
   // State for PDF generation
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
@@ -289,12 +587,8 @@ const Reports: React.FC<ReportsProps> = ({
       const prompt = `
         As an agricultural expert, provide sustainable farming recommendations for a farm with the following details:
 
-        Location: ${queryData.location}
         Current Crops: ${queryData.cropTypes.join(", ")}
         Soil Type: ${queryData.soilType}
-        Water Source: ${queryData.waterSource}
-        Farm Size: ${queryData.farmSize} hectares
-        Current Irrigation Method: ${queryData.currentIrrigationMethod}
 
         Based on this information and considering water sustainability, provide the following:
         1. Rainfall prediction for this region (including estimated amount in mm)
@@ -449,55 +743,12 @@ const Reports: React.FC<ReportsProps> = ({
       if (geminiPredictions) {
         // Update with real data from Gemini
         setPredictions(geminiPredictions);
-
-        // Update water usage data based on farm size and Gemini recommendations
-        const farmSizeNum = parseInt(farmData.farmSize) || 5;
-        const baseRiceUsage = 800 * farmSizeNum;
-        const baseWheatUsage = 400 * farmSizeNum;
-
-        // Calculate recommended values based on potential water savings
-        let savingsPercent = 35; // Default value
-
-        try {
-          // Extract percentage value from string like "30%" or "30 percent"
-          const percentMatch =
-            geminiPredictions.potentialWaterSavings.match(/(\d+)/);
-          if (percentMatch && percentMatch[1]) {
-            savingsPercent = parseInt(percentMatch[1]);
-          }
-        } catch (e) {
-          console.error("Error parsing savings percentage:", e);
-        }
-
-        const savingsFactor = (100 - savingsPercent) / 100;
-
-        const newWaterData = [
-          {
-            name: normalizedLanguage === "en" ? "Rice" : "चावल",
-            current: baseRiceUsage,
-            recommended: Math.floor(baseRiceUsage * savingsFactor),
-          },
-          {
-            name: normalizedLanguage === "en" ? "Wheat" : "गेहूं",
-            current: baseWheatUsage,
-            recommended: Math.floor(baseWheatUsage * savingsFactor),
-          },
-          {
-            name: normalizedLanguage === "en" ? "Total" : "कुल",
-            current: baseRiceUsage + baseWheatUsage,
-            recommended:
-              Math.floor(baseRiceUsage * savingsFactor) +
-              Math.floor(baseWheatUsage * savingsFactor),
-          },
-        ];
-
-        setWaterData(newWaterData);
         setHasGeneratedReport(true);
 
         toast.success(
           normalizedLanguage === "en"
-            ? "Report generated successfully with Gemini AI!"
-            : "जेमिनी AI के साथ रिपोर्ट सफलतापूर्वक जनरेट की गई!",
+            ? "Report generated successfully with FarmGPT AI!"
+            : "FarmGPT AI के साथ रिपोर्ट सफलतापूर्वक जनरेट की गई!",
         );
       } else {
         // Fallback to mock data if Gemini fails
@@ -517,56 +768,9 @@ const Reports: React.FC<ReportsProps> = ({
           waterAvailability: "Moderate decline in groundwater levels expected",
         };
 
-        // Adjust recommendations based on region
-        const location = farmData.location.toLowerCase();
-
-        if (location.includes("punjab") || location.includes("haryana")) {
-          regionBasedRecommendations.recommendedCrops = [
-            "Wheat",
-            "Maize",
-            "Pulses",
-            "Oilseeds",
-            "Barley",
-          ];
-          regionBasedRecommendations.rainfallPrediction =
-            "600-700mm expected annually";
-        } else if (location.includes("rajasthan")) {
-          regionBasedRecommendations.recommendedCrops = [
-            "Pearl Millet",
-            "Sorghum",
-            "Cluster Bean",
-            "Moth Bean",
-            "Sesame",
-          ];
-          regionBasedRecommendations.rainfallPrediction =
-            "250-350mm expected annually";
-        } else if (
-          location.includes("kerala") ||
-          location.includes("karnataka")
-        ) {
-          regionBasedRecommendations.recommendedCrops = [
-            "Coconut",
-            "Arecanut",
-            "Black Pepper",
-            "Cardamom",
-            "Coffee",
-          ];
-          regionBasedRecommendations.rainfallPrediction =
-            "2500-3000mm expected annually";
-        } else if (
-          location.includes("uttar pradesh") ||
-          location.includes("bihar")
-        ) {
-          regionBasedRecommendations.recommendedCrops = [
-            "Wheat",
-            "Maize",
-            "Chickpea",
-            "Mustard",
-            "Lentil",
-          ];
-          regionBasedRecommendations.rainfallPrediction =
-            "800-1000mm expected annually";
-        }
+        // Use general recommendations since we don't have location data
+        regionBasedRecommendations.rainfallPrediction =
+          "750-850mm expected annually";
 
         // Convert region names to Hindi if needed
         if (normalizedLanguage === "hi") {
@@ -681,279 +885,92 @@ const Reports: React.FC<ReportsProps> = ({
     }
   };
 
-  // Generate PDF using PDFShift API
+  // Generate PDF using html2canvas and jsPDF
   const generatePDF = async () => {
     setIsLoading(true);
 
     try {
+      // Validate required fields before generating PDF
+      if (!farmData.cropTypes.length || !farmData.soilType) {
+        toast.error(
+          normalizedLanguage === "en"
+            ? "Please fill in crop types and soil type before generating PDF."
+            : "PDF जनरेट करने से पहले कृपया फसलें और मिट्टी का प्रकार भरें।",
+        );
+        setIsLoading(false);
+        return;
+      }
+
       if (reportRef.current) {
-        // Create HTML with proper styling for PDF
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <title>JalDhara Farm Report</title>
-              <style>
-                body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
-                h1 { color: #3b82f6; }
-                h2 { color: #0f766e; margin-top: 20px; }
-                .section { margin-bottom: 20px; }
-                .farm-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-                .detail-box { border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
-                .detail-label { font-size: 12px; color: #777; }
-                .climate-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-                .climate-box { background-color: #e0f2fe; padding: 10px; border-radius: 5px; border: 1px solid #bae6fd; }
-                .crop-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-                .recommended { background-color: #dcfce7; padding: 10px; border-radius: 5px; border: 1px solid #bbf7d0; }
-                .not-recommended { background-color: #fee2e2; padding: 10px; border-radius: 5px; border: 1px solid #fecaca; }
-                .crop-item { display: flex; align-items: center; margin: 5px 0; }
-                .crop-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
-                .green-dot { background-color: #22c55e; }
-                .red-dot { background-color: #ef4444; }
-                .score-box { background-color: #e0f7fa; padding: 15px; border-radius: 5px; margin-top: 20px; }
-                .progress-bar { width: 100%; height: 10px; background-color: #e5e7eb; border-radius: 5px; margin: 8px 0; }
-                .progress-fill { height: 100%; border-radius: 5px; }
-                .footer { margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px; font-size: 12px; color: #777; }
-              </style>
-            </head>
-            <body>
-              <h1>JalDhara - ${normalizedLanguage === "en" ? "Farm Water Assessment Report" : "खेत जल मूल्यांकन रिपोर्ट"}</h1>
-              <p>${normalizedLanguage === "en" ? "Generated on" : "उत्पन्न तिथि"}: ${new Date().toLocaleDateString(
-                normalizedLanguage === "en" ? "en-US" : "hi-IN",
-                {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                },
-              )}</p>
+        toast.info(
+          normalizedLanguage === "en"
+            ? "Capturing report and generating PDF..."
+            : "रिपोर्ट कैप्चर कर रहे हैं और PDF जनरेट कर रहे हैं...",
+        );
 
-              <div class="section">
-                <h2>${normalizedLanguage === "en" ? "Farm Details" : "खेत विवरण"}</h2>
-                <div class="farm-details">
-                  <div class="detail-box">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Location" : "स्थान"}</div>
-                    <div>${farmData.location}</div>
-                  </div>
-                  <div class="detail-box">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Crops" : "फसलें"}</div>
-                    <div>${farmData.cropTypes.join(", ")}</div>
-                  </div>
-                  <div class="detail-box">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Soil Type" : "मिट्टी का प्रकार"}</div>
-                    <div>${farmData.soilType}</div>
-                  </div>
-                  <div class="detail-box">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Farm Size" : "खेत का आकार"}</div>
-                    <div>${farmData.farmSize} ha</div>
-                  </div>
-                </div>
-              </div>
+        // Use html2canvas to capture the report element
+        const canvas = await html2canvas(reportRef.current, {
+          scale: 2, // Higher quality
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          width: reportRef.current.scrollWidth,
+          height: reportRef.current.scrollHeight,
+        });
 
-              <div class="section">
-                <h2>${normalizedLanguage === "en" ? "Climate Predictions" : "जलवायु पूर्वानुमान"}</h2>
-                <div class="climate-section">
-                  <div class="climate-box">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Rainfall Prediction" : "वर्षा का पूर्वानुमान"}</div>
-                    <div>${predictions.rainfallPrediction}</div>
-                  </div>
-                  <div class="climate-box">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Water Availability" : "जल उपलब्धता"}</div>
-                    <div>${predictions.waterAvailability}</div>
-                  </div>
-                </div>
-              </div>
+        // Create PDF
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
 
-              <div class="section">
-                <h2>${normalizedLanguage === "en" ? "Crop Recommendations" : "फसल अनुशंसाएँ"}</h2>
-                <div class="crop-section">
-                  <div class="recommended">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Recommended Crops" : "अनुशंसित फसलें"}</div>
-                    ${predictions.recommendedCrops
-                      .map(
-                        (crop) => `
-                      <div class="crop-item">
-                        <div class="crop-dot green-dot"></div>
-                        <div>${crop}</div>
-                      </div>
-                    `,
-                      )
-                      .join("")}
-                  </div>
-                  <div class="not-recommended">
-                    <div class="detail-label">${normalizedLanguage === "en" ? "Not Recommended Crops" : "अनुशंसित नहीं फसलें"}</div>
-                    ${predictions.notRecommendedCrops
-                      .map(
-                        (crop) => `
-                      <div class="crop-item">
-                        <div class="crop-dot red-dot"></div>
-                        <div>${crop}</div>
-                      </div>
-                    `,
-                      )
-                      .join("")}
-                  </div>
-                </div>
-              </div>
+        // Calculate dimensions
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
 
-              <div class="score-box">
-                <h2>${normalizedLanguage === "en" ? "Sustainability Score" : "स्थिरता स्कोर"}</h2>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width: ${predictions.sustainabilityScore}%; background-color: ${
-                    predictions.sustainabilityScore > 80
-                      ? "#22c55e"
-                      : predictions.sustainabilityScore > 60
-                        ? "#eab308"
-                        : "#f97316"
-                  };"></div>
-                </div>
-                <p>${
-                  normalizedLanguage === "en"
-                    ? `Your farm's water sustainability score is ${predictions.sustainabilityScore}/100`
-                    : `आपके खेत का जल स्थिरता स्कोर ${predictions.sustainabilityScore}/100 है`
-                }</p>
-                <p>${
-                  normalizedLanguage === "en"
-                    ? `Potential water savings: ${predictions.potentialWaterSavings}`
-                    : `संभावित जल बचत: ${predictions.potentialWaterSavings}`
-                }</p>
-                <p>${predictions.irrigationRecommendation}</p>
-              </div>
+        // Scale image to fit PDF width
+        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+        const imgX = (pdfWidth - imgWidth * ratio) / 2;
+        const imgY = 0;
 
-              <div class="footer">
-                <p>JalDhara © ${new Date().getFullYear()} - ${
-                  normalizedLanguage === "en"
-                    ? "AI and Human Powered Farming Solutions"
-                    : "AI और मानव संचालित कृषि समाधान"
-                }</p>
-                <p>${
-                  normalizedLanguage === "en"
-                    ? "Powered by Gemini AI"
-                    : "जेमिनी AI द्वारा संचालित"
-                }</p>
-              </div>
-            </body>
-          </html>
-        `;
+        // Add image to PDF
+        pdf.addImage(
+          imgData,
+          "PNG",
+          imgX,
+          imgY,
+          imgWidth * ratio,
+          imgHeight * ratio,
+        );
 
-        console.log("Sending HTML to PDFShift");
+        // Generate filename
+        const timestamp = new Date().toISOString().split("T")[0];
+        const filename = `FarmGPT_Report_${timestamp}.pdf`;
 
-        // Unique filename based on timestamp and farm location
-        const filename = `JalDhara_Farm_Report_${farmData.location.replace(/\s+/g, "_")}_${Date.now()}.pdf`;
+        // Save the PDF
+        pdf.save(filename);
 
-        try {
-          // Call PDFShift API with proper error handling
-          const response = await axios({
-            method: "post",
-            url: "https://api.pdfshift.io/v3/convert/pdf",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Basic " + btoa(`${PDFSHIFT_API_KEY}:`),
-            },
-            data: {
-              source: htmlContent,
-              landscape: false,
-              margin: {
-                top: "20px",
-                bottom: "20px",
-                left: "20px",
-                right: "20px",
-              },
-              filename: filename,
-            },
-            responseType: "blob", // Important: get the response as a blob
-          });
+        // Store in localStorage for the Reports section
+        const storedReports = JSON.parse(
+          localStorage.getItem("jaldhara_reports") || "[]",
+        );
+        const newReport = {
+          id: Date.now().toString(),
+          date: new Date().toISOString(),
+          filename: filename,
+          crops: farmData.cropTypes.join(", "),
+          data: null, // No URL needed since we download directly
+          sustainabilityScore: predictions.sustainabilityScore,
+        };
+        storedReports.push(newReport);
+        localStorage.setItem("jaldhara_reports", JSON.stringify(storedReports));
 
-          console.log("PDFShift API Response:", response);
-
-          // Create a URL for the blob
-          const pdfBlob = new Blob([response.data], {
-            type: "application/pdf",
-          });
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          setGeneratedPdfUrl(pdfUrl);
-
-          // Store in localStorage for the Reports section
-          const storedReports = JSON.parse(
-            localStorage.getItem("jaldhara_reports") || "[]",
-          );
-          const newReport = {
-            id: Date.now().toString(),
-            date: new Date().toISOString(),
-            filename: filename,
-            location: farmData.location,
-            crops: farmData.cropTypes.join(", "),
-            data: pdfUrl, // Store URL for this session
-            sustainabilityScore: predictions.sustainabilityScore,
-          };
-          storedReports.push(newReport);
-          localStorage.setItem(
-            "jaldhara_reports",
-            JSON.stringify(storedReports),
-          );
-
-          // Trigger download
-          const link = document.createElement("a");
-          link.href = pdfUrl;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          toast.success(
-            normalizedLanguage === "en"
-              ? "PDF Report generated and saved to your reports! Download started."
-              : "PDF रिपोर्ट जनरेट की गई और आपकी रिपोर्ट में सहेजी गई! डाउनलोड शुरू हुआ।",
-          );
-        } catch (pdfShiftError) {
-          console.error("PDFShift API Error:", pdfShiftError);
-
-          // Fall back to browser print function
-          toast.error(
-            normalizedLanguage === "en"
-              ? "Error with PDF service. Using browser print instead."
-              : "PDF सेवा में त्रुटि। ब्राउज़र प्रिंट का उपयोग करें।",
-          );
-
-          // Store the HTML directly for printing
-          const printWindow = window.open("", "_blank");
-          if (printWindow) {
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
-            printWindow.focus();
-
-            // Add a delay to make sure the content is loaded
-            setTimeout(() => {
-              printWindow.print();
-
-              // Store a reference to HTML report in localStorage
-              const storedReports = JSON.parse(
-                localStorage.getItem("jaldhara_reports") || "[]",
-              );
-              const newReport = {
-                id: Date.now().toString(),
-                date: new Date().toISOString(),
-                filename: `JalDhara_Farm_Report_${farmData.location.replace(/\s+/g, "_")}.html`,
-                location: farmData.location,
-                crops: farmData.cropTypes.join(", "),
-                data: null, // No blob URL in this case
-                isHtml: true,
-                sustainabilityScore: predictions.sustainabilityScore,
-              };
-              storedReports.push(newReport);
-              localStorage.setItem(
-                "jaldhara_reports",
-                JSON.stringify(storedReports),
-              );
-            }, 1000);
-          } else {
-            toast.error(
-              normalizedLanguage === "en"
-                ? "Could not open print window. Please try again."
-                : "प्रिंट विंडो नहीं खोल सका। कृपया पुन: प्रयास करें।",
-            );
-          }
-        }
+        toast.success(
+          normalizedLanguage === "en"
+            ? "PDF Report generated and downloaded successfully!"
+            : "PDF रिपोर्ट सफलतापूर्वक जनरेट और डाउनलोड की गई!",
+        );
       }
     } catch (error) {
       console.error("Error in PDF generation process:", error);
@@ -972,12 +989,8 @@ const Reports: React.FC<ReportsProps> = ({
       title: "Farm Water Assessment Report",
       subtitle: "Generate a personalized sustainability report for your farm",
       formTitle: "Farm Details",
-      location: "Location",
       cropTypes: "Current Crops",
       soilType: "Soil Type",
-      waterSource: "Water Source",
-      farmSize: "Farm Size (Hectares)",
-      irrigationMethod: "Current Irrigation Method",
       generateButton: "Generate Report",
       generatingText: "Analyzing data...",
       noReports:
@@ -1011,12 +1024,8 @@ const Reports: React.FC<ReportsProps> = ({
       title: "खेत जल मूल्यांकन रिपोर्ट",
       subtitle: "अपने खेत के लिए व्यक्तिगत स्थिरता रिपोर्ट जनरेट करें",
       formTitle: "खेत विवरण",
-      location: "स्थान",
       cropTypes: "वर्तमान फसलें",
       soilType: "मिट्टी का प्रकार",
-      waterSource: "जल स्रोत",
-      farmSize: "खेत का आकार (हेक्टेयर)",
-      irrigationMethod: "वर्तमान सिंचाई विधि",
       generateButton: "रिपोर्ट जनरेट करें",
       generatingText: "डेटा का विश्लेषण...",
       noReports:
@@ -1121,19 +1130,11 @@ const Reports: React.FC<ReportsProps> = ({
         const defaultValues = {
           cropTypes: [],
           soilType: "",
-          farmSize: "",
           irrigationAmount: "",
         };
 
         // Only clear fields that weren't filled by AI and have default values
         const fieldsToClear: (keyof FarmData)[] = [];
-        if (
-          !aggregatedUpdates.location &&
-          updatedFarmData.location === defaultValues.location
-        ) {
-          delete updatedFarmData.location;
-          fieldsToClear.push("location");
-        }
         if (
           !aggregatedUpdates.cropTypes &&
           JSON.stringify(updatedFarmData.cropTypes) ===
@@ -1148,57 +1149,6 @@ const Reports: React.FC<ReportsProps> = ({
         ) {
           delete updatedFarmData.soilType;
           fieldsToClear.push("soilType");
-        }
-        if (
-          !aggregatedUpdates.waterSource &&
-          updatedFarmData.waterSource === defaultValues.waterSource
-        ) {
-          delete updatedFarmData.waterSource;
-          fieldsToClear.push("waterSource");
-        }
-        if (
-          !aggregatedUpdates.currentIrrigationMethod &&
-          updatedFarmData.currentIrrigationMethod ===
-            defaultValues.currentIrrigationMethod
-        ) {
-          delete updatedFarmData.currentIrrigationMethod;
-          fieldsToClear.push("currentIrrigationMethod");
-        }
-        if (
-          !aggregatedUpdates.soilMoisture &&
-          updatedFarmData.soilMoisture === defaultValues.soilMoisture
-        ) {
-          delete updatedFarmData.soilMoisture;
-          fieldsToClear.push("soilMoisture");
-        }
-        if (
-          !aggregatedUpdates.cropRotationPattern &&
-          updatedFarmData.cropRotationPattern ===
-            defaultValues.cropRotationPattern
-        ) {
-          delete updatedFarmData.cropRotationPattern;
-          fieldsToClear.push("cropRotationPattern");
-        }
-        if (
-          !aggregatedUpdates.majorChallenges &&
-          updatedFarmData.majorChallenges === defaultValues.majorChallenges
-        ) {
-          delete updatedFarmData.majorChallenges;
-          fieldsToClear.push("majorChallenges");
-        }
-        if (
-          !aggregatedUpdates.harvestSeason &&
-          updatedFarmData.harvestSeason === defaultValues.harvestSeason
-        ) {
-          delete updatedFarmData.harvestSeason;
-          fieldsToClear.push("harvestSeason");
-        }
-        if (
-          !aggregatedUpdates.fertilizerUsage &&
-          updatedFarmData.fertilizerUsage === defaultValues.fertilizerUsage
-        ) {
-          delete updatedFarmData.fertilizerUsage;
-          fieldsToClear.push("fertilizerUsage");
         }
         if (
           !aggregatedUpdates.irrigationAmount &&
@@ -1253,13 +1203,6 @@ const Reports: React.FC<ReportsProps> = ({
     for (const analysis of highConfidenceAnalyses) {
       if (analysis.formData) {
         if (
-          analysis.formData.location &&
-          analysis.confidence >= 0.8 &&
-          !updates.location
-        ) {
-          updates.location = analysis.formData.location;
-        }
-        if (
           analysis.formData.currentCrops &&
           analysis.formData.currentCrops.length > 0 &&
           !updates.cropTypes
@@ -1268,34 +1211,6 @@ const Reports: React.FC<ReportsProps> = ({
         }
         if (analysis.formData.soilType && !updates.soilType) {
           updates.soilType = analysis.formData.soilType;
-        }
-        if (analysis.formData.waterSource && !updates.waterSource) {
-          updates.waterSource = analysis.formData.waterSource;
-        }
-        if (
-          analysis.formData.currentIrrigationMethod &&
-          !updates.currentIrrigationMethod
-        ) {
-          updates.currentIrrigationMethod =
-            analysis.formData.currentIrrigationMethod;
-        }
-        if (analysis.formData.soilMoisture && !updates.soilMoisture) {
-          updates.soilMoisture = analysis.formData.soilMoisture;
-        }
-        if (
-          analysis.formData.cropRotationPattern &&
-          !updates.cropRotationPattern
-        ) {
-          updates.cropRotationPattern = analysis.formData.cropRotationPattern;
-        }
-        if (analysis.formData.majorChallenges && !updates.majorChallenges) {
-          updates.majorChallenges = analysis.formData.majorChallenges;
-        }
-        if (analysis.formData.harvestSeason && !updates.harvestSeason) {
-          updates.harvestSeason = analysis.formData.harvestSeason;
-        }
-        if (analysis.formData.fertilizerType && !updates.fertilizerUsage) {
-          updates.fertilizerUsage = analysis.formData.fertilizerType;
         }
       }
     }
@@ -1387,17 +1302,6 @@ const Reports: React.FC<ReportsProps> = ({
                   </Button>
                 </div>
               </div>
-
-              <VoiceInputField
-                id="farmSize"
-                value={farmData.farmSize}
-                onChange={(value) =>
-                  setFarmData({ ...farmData, farmSize: value })
-                }
-                label={activeContent.farmSize}
-                type="number"
-                language={normalizedLanguage}
-              />
 
               <VoiceInputField
                 id="irrigationAmount"
@@ -1498,13 +1402,7 @@ const Reports: React.FC<ReportsProps> = ({
                   <h3 className="text-lg font-semibold mb-3">
                     {activeContent.farmDetails}
                   </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="border rounded p-3">
-                      <p className="text-sm text-muted-foreground">
-                        {activeContent.location}
-                      </p>
-                      <p className="font-medium">{farmData.location}</p>
-                    </div>
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="border rounded p-3">
                       <p className="text-sm text-muted-foreground">
                         {activeContent.cropTypes}
@@ -1518,12 +1416,6 @@ const Reports: React.FC<ReportsProps> = ({
                         {activeContent.soilType}
                       </p>
                       <p className="font-medium">{farmData.soilType}</p>
-                    </div>
-                    <div className="border rounded p-3">
-                      <p className="text-sm text-muted-foreground">
-                        {activeContent.farmSize}
-                      </p>
-                      <p className="font-medium">{farmData.farmSize} ha</p>
                     </div>
                   </div>
                 </div>
@@ -1645,8 +1537,8 @@ const Reports: React.FC<ReportsProps> = ({
 
                 <div className="text-center text-xs text-gray-500 mt-4">
                   {normalizedLanguage === "en"
-                    ? "Analysis powered by Gemini AI"
-                    : "जेमिनी AI द्वारा संचालित विश्लेषण"}
+                    ? "Analysis powered by FarmGPT"
+                    : "FarmGPT द्वारा संचालित विश्लेषण"}
                 </div>
               </CardContent>
               <CardFooter className="flex flex-wrap gap-3 border-t pt-6">
@@ -1662,22 +1554,6 @@ const Reports: React.FC<ReportsProps> = ({
                     <Download className="h-4 w-4" />
                   )}
                   {activeContent.download}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="gap-2 app-button-glow water-button-glow"
-                  onClick={() => handleAction("print")}
-                >
-                  <Printer className="h-4 w-4" />
-                  {activeContent.print}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="gap-2 app-button-glow water-button-glow"
-                  onClick={() => handleAction("share")}
-                >
-                  <Share2 className="h-4 w-4" />
-                  {activeContent.share}
                 </Button>
               </CardFooter>
             </Card>

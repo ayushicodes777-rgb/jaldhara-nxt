@@ -17,48 +17,19 @@ import {
 
 const queryClient = new QueryClient();
 
-// Define all supported languages
-export type SupportedLanguage =
-  | "en"
-  | "hi"
-  | "bn"
-  | "mr"
-  | "te"
-  | "ta"
-  | "gu"
-  | "ur"
-  | "kn"
-  | "ml"
-  | "pa";
+// Define supported languages - only English and Hindi
+export type SupportedLanguage = "en" | "hi";
 
 // Language display names
 export const languageNames: Record<SupportedLanguage, string> = {
   en: "English",
   hi: "हिंदी", // Hindi
-  bn: "বাংলা", // Bengali
-  mr: "मराठी", // Marathi
-  te: "తెలుగు", // Telugu
-  ta: "தமிழ்", // Tamil
-  gu: "ગુજરાતી", // Gujarati
-  ur: "اردو", // Urdu
-  kn: "ಕನ್ನಡ", // Kannada
-  ml: "മലയാളം", // Malayalam
-  pa: "ਪੰਜਾਬੀ", // Punjabi
 };
 
 // Footer translations
 export const footerText: Record<SupportedLanguage, string> = {
   en: "© 2025 FarmGPT - AI-Powered Farm Management Assistant",
   hi: "© 2025 फार्मजीपीटी - AI-संचालित खेत प्रबंधन सहायक",
-  bn: "© 2025 জলধারা - AI-পাওয়ার্ড জল ব্যবস্থাপনা সহকারী",
-  mr: "© 2025 जलधारा - AI-संचालित पाणी व्यवस्थापन सहाय्यक",
-  te: "© 2025 జల్దర - AI-పవర్డ్ నీటి నిర్వహణ సహాయకుడు",
-  ta: "© 2025 ஜல்தாரா - AI-இயக்கப்படும் நீர் மேலாண்மை உதவியாளர்",
-  gu: "© 2025 જલધારા - AI-સંચાલિત પાણી વ્યવસ્થાપન સહાયક",
-  ur: "© 2025 جل دھارا - AI-پاور واٹر مینجمنٹ اسسٹنٹ",
-  kn: "© 2025 ಜಲ್ಧಾರ - AI-ಪವರ್ಡ್ ನೀರಿನ ನಿರ್ವಹಣಾ ಸಹಾಯಕ",
-  ml: "© 2025 ജൽധാര - AI-പവർഡ് വാട്ടർ മാനേജ്മെന്റ് അസിസ്റ്റന്റ്",
-  pa: "© 2025 ਜਲਧਾਰਾ - AI-ਸੰਚਾਲਿਤ ਪਾਣੀ ਪ੍ਰਬੰਧਨ ਸਹਾਇਕ",
 };
 
 const App = () => {

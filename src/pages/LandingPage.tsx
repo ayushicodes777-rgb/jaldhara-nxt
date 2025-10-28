@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  DropletIcon,
-  Sprout,
-  ArrowRight,
-  Leaf,
-  Sun,
-  Cloud,
-  Mic,
-  BarChart,
-  Building,
-} from "lucide-react";
+import { DropletIcon, Sprout, ArrowRight, Mic, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import EnhancedRainAnimation from "@/components/EnhancedRainAnimation";
@@ -57,7 +47,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
       title: "FarmGPT",
       subtitle: "AI-Powered Farm Management Assistant",
       description:
-        "Use voice commands to manage irrigation and get sustainable water practices along with solutions to everyday farming challenges.",
+        "Experience automatic irrigation after identifying soil moisture and image detection of soil. Use voice commands to manage irrigation and get sustainable water practices along with solutions to everyday farming challenges.",
       features: [
         {
           title: "Voice Assistance",
@@ -81,13 +71,12 @@ const LandingPage: React.FC<LandingPageProps> = ({
         },
       ],
       cta: "View Reports",
-      business: "Book Consultation",
     },
     hi: {
       title: "फार्मजीपीटी",
       subtitle: "AI और मानव संचालित कृषि समाधान",
       description:
-        "आवाज़ कमांड का उपयोग करके सिंचाई प्रबंधित करें और टिकाऊ जल प्रथाओं के साथ-साथ रोजमर्रा की खेती की चुनौतियों के समाधान प्राप्त करें।",
+        "मिट्टी की नमी की पहचान करने और मिट्टी की छवि पहचान के बाद स्वचालित सिंचाई का अनुभव करें। आवाज़ कमांड का उपयोग करके सिंचाई प्रबंधित करें और टिकाऊ जल प्रथाओं के साथ-साथ रोजमर्रा की खेती की चुनौतियों के समाधान प्राप्त करें।",
       features: [
         {
           title: "आवाज सहायता",
@@ -111,7 +100,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
         },
       ],
       cta: "रिपोर्ट देखें",
-      business: "आदेश परामर्श",
     },
   };
 
@@ -178,19 +166,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
                   language={normalizedLanguage}
                   className="px-6 py-6 shadow-md hover:shadow-xl transition-all duration-300 relative z-10 glowing"
                 />
-
-                <Button
-                  onClick={() =>
-                    window.open("https://jaldharabusiness.web.app", "_blank")
-                  }
-                  size="lg"
-                  className="gap-2 bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-xl transition-all duration-300 px-6 py-6 relative z-10 app-button-glow purple-button-glow"
-                >
-                  <span className="relative z-10">
-                    {activeContent.business}
-                  </span>
-                  <Building className="h-5 w-5 animate-bounce-x" />
-                </Button>
               </div>
             </div>
 

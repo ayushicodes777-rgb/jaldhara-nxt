@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Suspense } from 'react';
-import { SupportedLanguage } from '@/App';
+import React, { useState, useEffect, Suspense } from "react";
+import { SupportedLanguage } from "@/App";
 // Remove direct import of recharts components
 // import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -11,7 +11,7 @@ interface WaterUsageData {
 
 interface WaterUsageChartProps {
   data: WaterUsageData[];
-  language: SupportedLanguage | 'en' | 'hi';
+  language: SupportedLanguage | "en" | "hi";
 }
 
 // Loading component
@@ -25,35 +25,35 @@ const ChartLoading = () => (
 // Core chart component separated for safe dynamic loading
 const CoreChart = ({ data, language }: WaterUsageChartProps) => {
   // Normalize language for component
-  const normalizedLanguage: 'en' | 'hi' = language === 'hi' ? 'hi' : 'en';
+  const normalizedLanguage: "en" | "hi" = language === "hi" ? "hi" : "en";
   const [Recharts, setRecharts] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Labels for the chart
   const tooltipLabels = {
     en: {
-      current: 'Current Usage',
-      recommended: 'Recommended Usage'
+      current: "Current Usage",
+      recommended: "Recommended Usage",
     },
     hi: {
-      current: 'वर्तमान उपयोग',
-      recommended: 'अनुशंसित उपयोग'
-    }
+      current: "वर्तमान उपयोग",
+      recommended: "अनुशंसित उपयोग",
+    },
   };
 
   const labels = {
     en: {
-      title: 'Water Usage Comparison',
-      yAxis: 'Water (liters per acre)',
-      legend1: 'Current Usage',
-      legend2: 'Recommended Usage'
+      title: "Water Usage Comparison",
+      yAxis: "Water (liters per hectare)",
+      legend1: "Current Usage",
+      legend2: "Recommended Usage",
     },
     hi: {
-      title: 'जल उपयोग तुलना',
-      yAxis: 'पानी (लीटर प्रति एकड़)',
-      legend1: 'वर्तमान उपयोग',
-      legend2: 'अनुशंसित उपयोग'
-    }
+      title: "जल उपयोग तुलना",
+      yAxis: "पानी (लीटर प्रति हेक्टेयर)",
+      legend1: "वर्तमान उपयोग",
+      legend2: "अनुशंसित उपयोग",
+    },
   };
 
   // Safe loading of Recharts
@@ -63,8 +63,8 @@ const CoreChart = ({ data, language }: WaterUsageChartProps) => {
     const loadRecharts = async () => {
       try {
         // Safely import Recharts components using dynamic import
-        const module = await import('recharts');
-        
+        const module = await import("recharts");
+
         if (isMounted) {
           // Wrap in a setTimeout to ensure all dependencies are properly initialized
           setTimeout(() => {
@@ -93,10 +93,28 @@ const CoreChart = ({ data, language }: WaterUsageChartProps) => {
   }
 
   // Extract components safely
-  const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+  const {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+  } = Recharts;
 
   // Only render when all components are available
-  if (!BarChart || !Bar || !XAxis || !YAxis || !CartesianGrid || !Tooltip || !Legend || !ResponsiveContainer) {
+  if (
+    !BarChart ||
+    !Bar ||
+    !XAxis ||
+    !YAxis ||
+    !CartesianGrid ||
+    !Tooltip ||
+    !Legend ||
+    !ResponsiveContainer
+  ) {
     return <ChartLoading />;
   }
 
@@ -117,17 +135,34 @@ const CoreChart = ({ data, language }: WaterUsageChartProps) => {
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
-          <YAxis label={{ value: labels[normalizedLanguage].yAxis, angle: -90, position: 'insideLeft' }} />
-          <Tooltip 
+          <YAxis
+            label={{
+              value: labels[normalizedLanguage].yAxis,
+              angle: -90,
+              position: "insideLeft",
+            }}
+          />
+          <Tooltip
             formatter={(value, name) => {
               const formattedValue = `${value.toLocaleString()} L`;
-              const label = name === 'current' ? tooltipLabels[normalizedLanguage].current : tooltipLabels[normalizedLanguage].recommended;
+              const label =
+                name === "current"
+                  ? tooltipLabels[normalizedLanguage].current
+                  : tooltipLabels[normalizedLanguage].recommended;
               return [formattedValue, label];
             }}
           />
           <Legend />
-          <Bar dataKey="current" name={labels[normalizedLanguage].legend1} fill="#219ebc" />
-          <Bar dataKey="recommended" name={labels[normalizedLanguage].legend2} fill="#52b788" />
+          <Bar
+            dataKey="current"
+            name={labels[normalizedLanguage].legend1}
+            fill="#219ebc"
+          />
+          <Bar
+            dataKey="recommended"
+            name={labels[normalizedLanguage].legend2}
+            fill="#52b788"
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -149,12 +184,14 @@ const WaterUsageChart: React.FC<WaterUsageChartProps> = (props) => {
     return (
       <div className="w-full h-80 mt-6 p-4 border border-orange-200 bg-orange-50 rounded-lg">
         <h3 className="text-lg font-semibold mb-2 text-center text-orange-800">
-          {props.language === 'hi' ? 'चार्ट लोड करने में समस्या' : 'Chart Loading Issue'}
+          {props.language === "hi"
+            ? "चार्ट लोड करने में समस्या"
+            : "Chart Loading Issue"}
         </h3>
         <p className="text-center text-orange-700">
-          {props.language === 'hi' 
-            ? 'डेटा विज़ुअलाइज़ेशन लोड करने में समस्या हुई। कृपया पेज को रिफ्रेश करें।' 
-            : 'There was a problem loading the data visualization. Please refresh the page.'}
+          {props.language === "hi"
+            ? "डेटा विज़ुअलाइज़ेशन लोड करने में समस्या हुई। कृपया पेज को रिफ्रेश करें।"
+            : "There was a problem loading the data visualization. Please refresh the page."}
         </p>
       </div>
     );
