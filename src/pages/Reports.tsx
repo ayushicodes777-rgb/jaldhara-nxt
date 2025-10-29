@@ -58,7 +58,11 @@ interface ReportsProps {
 interface FarmData {
   cropTypes: string[];
   soilType: string;
+  farmSize?: string;
   irrigationAmount?: string;
+  fertilizerType?: string;
+  harvestSeason?: string;
+  majorChallenges?: string;
 }
 
 // Prediction data type
@@ -219,7 +223,11 @@ const Reports: React.FC<ReportsProps> = ({
   const [farmData, setFarmData] = useState<FarmData>({
     cropTypes: [],
     soilType: "",
+    farmSize: "",
     irrigationAmount: "",
+    fertilizerType: "",
+    harvestSeason: "",
+    majorChallenges: "",
   });
 
   // State for AI-generated predictions
@@ -589,8 +597,13 @@ const Reports: React.FC<ReportsProps> = ({
 
         Current Crops: ${queryData.cropTypes.join(", ")}
         Soil Type: ${queryData.soilType}
+        Farm Size: ${queryData.farmSize || "Not specified"} hectares
+        Daily Irrigation Amount: ${queryData.irrigationAmount || "Not specified"} liters
+        Fertilizer Type: ${queryData.fertilizerType || "Not specified"}
+        Harvest Season: ${queryData.harvestSeason || "Not specified"}
+        Major Challenges: ${queryData.majorChallenges || "Not specified"}
 
-        Based on this information and considering water sustainability, provide the following:
+        Based on this comprehensive information and considering water sustainability, provide the following:
         1. Rainfall prediction for this region (including estimated amount in mm)
         2. Water availability outlook
         3. List of recommended crops that are water-efficient for this farm (exactly 5 crops)
@@ -610,6 +623,8 @@ const Reports: React.FC<ReportsProps> = ({
           "irrigationRecommendation": "string"
         }
 
+        Consider the farm size, irrigation amount, fertilizer practices, harvest season, and specific challenges in your analysis.
+        Provide recommendations tailored to these specific conditions.
         Explain your recommendations briefly but keep the JSON structure intact.
       `;
 
@@ -901,6 +916,22 @@ const Reports: React.FC<ReportsProps> = ({
         return;
       }
 
+      // Check if at least one additional field is filled
+      const hasAdditionalInfo =
+        farmData.farmSize ||
+        farmData.irrigationAmount ||
+        farmData.fertilizerType ||
+        farmData.harvestSeason ||
+        farmData.majorChallenges;
+
+      if (!hasAdditionalInfo) {
+        toast.info(
+          normalizedLanguage === "en"
+            ? "For better recommendations, please fill in additional farm details like farm size, irrigation amount, etc."
+            : "बेहतर सिफारिशों के लिए, कृपया खेत का आकार, सिंचाई की मात्रा आदि अतिरिक्त विवरण भरें।",
+        );
+      }
+
       if (reportRef.current) {
         toast.info(
           normalizedLanguage === "en"
@@ -960,6 +991,12 @@ const Reports: React.FC<ReportsProps> = ({
           date: new Date().toISOString(),
           filename: filename,
           crops: farmData.cropTypes.join(", "),
+          soilType: farmData.soilType,
+          farmSize: farmData.farmSize,
+          irrigationAmount: farmData.irrigationAmount,
+          fertilizerType: farmData.fertilizerType,
+          harvestSeason: farmData.harvestSeason,
+          majorChallenges: farmData.majorChallenges,
           data: null, // No URL needed since we download directly
           sustainabilityScore: predictions.sustainabilityScore,
         };
@@ -1304,6 +1341,24 @@ const Reports: React.FC<ReportsProps> = ({
               </div>
 
               <VoiceInputField
+                id="farmSize"
+                value={farmData.farmSize || ""}
+                onChange={(value) =>
+                  setFarmData({
+                    ...farmData,
+                    farmSize: value,
+                  })
+                }
+                label={
+                  normalizedLanguage === "en"
+                    ? "Farm Size (in hectares)"
+                    : "खेत का आकार (हेक्टेयर में)"
+                }
+                type="number"
+                language={normalizedLanguage}
+              />
+
+              <VoiceInputField
                 id="irrigationAmount"
                 value={farmData.irrigationAmount || ""}
                 onChange={(value) =>
@@ -1318,6 +1373,180 @@ const Reports: React.FC<ReportsProps> = ({
                     : "दैनिक सिंचाई की मात्रा (लीटर में)"
                 }
                 type="number"
+                language={normalizedLanguage}
+              />
+
+              <div className="space-y-2">
+                <Label htmlFor="fertilizerType">
+                  {normalizedLanguage === "en"
+                    ? "Fertilizer Type"
+                    : "उर्वरक प्रकार"}
+                </Label>
+                <div className="flex">
+                  <Select
+                    onValueChange={(value) =>
+                      setFarmData({ ...farmData, fertilizerType: value })
+                    }
+                    defaultValue={farmData.fertilizerType}
+                  >
+                    <SelectTrigger className="flex-1 rounded-r-none">
+                      <SelectValue
+                        placeholder={
+                          farmData.fertilizerType ||
+                          (normalizedLanguage === "en"
+                            ? "Select fertilizer type"
+                            : "उर्वरक प्रकार चुनें")
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {normalizedLanguage === "en" ? (
+                        <>
+                          <SelectItem value="organic">
+                            Organic (Compost, Manure)
+                          </SelectItem>
+                          <SelectItem value="chemical">
+                            Chemical (NPK, Urea)
+                          </SelectItem>
+                          <SelectItem value="mixed">
+                            Mixed (Organic + Chemical)
+                          </SelectItem>
+                          <SelectItem value="biofertilizers">
+                            Biofertilizers
+                          </SelectItem>
+                          <SelectItem value="none">No Fertilizers</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="organic">
+                            जैविक (खाद, कंपोस्ट)
+                          </SelectItem>
+                          <SelectItem value="chemical">
+                            रासायनिक (NPK, यूरिया)
+                          </SelectItem>
+                          <SelectItem value="mixed">
+                            मिश्रित (जैविक + रासायनिक)
+                          </SelectItem>
+                          <SelectItem value="biofertilizers">
+                            जैव-उर्वरक
+                          </SelectItem>
+                          <SelectItem value="none">कोई उर्वरक नहीं</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      toast.info(
+                        normalizedLanguage === "en"
+                          ? "Please select fertilizer type from the list"
+                          : "कृपया सूची से उर्वरक प्रकार चुनें",
+                      );
+                    }}
+                    className="rounded-l-none bg-water hover:bg-water-dark text-white"
+                  >
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="harvestSeason">
+                  {normalizedLanguage === "en"
+                    ? "Harvest Season"
+                    : "फसल का मौसम"}
+                </Label>
+                <div className="flex">
+                  <Select
+                    onValueChange={(value) =>
+                      setFarmData({ ...farmData, harvestSeason: value })
+                    }
+                    defaultValue={farmData.harvestSeason}
+                  >
+                    <SelectTrigger className="flex-1 rounded-r-none">
+                      <SelectValue
+                        placeholder={
+                          farmData.harvestSeason ||
+                          (normalizedLanguage === "en"
+                            ? "Select harvest season"
+                            : "फसल का मौसम चुनें")
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {normalizedLanguage === "en" ? (
+                        <>
+                          <SelectItem value="kharif">
+                            Kharif (Monsoon, Jun-Oct)
+                          </SelectItem>
+                          <SelectItem value="rabi">
+                            Rabi (Winter, Oct-Mar)
+                          </SelectItem>
+                          <SelectItem value="zaid">
+                            Zaid (Summer, Mar-Jun)
+                          </SelectItem>
+                          <SelectItem value="year-round">
+                            Year-round Cultivation
+                          </SelectItem>
+                          <SelectItem value="multiple">
+                            Multiple Harvests
+                          </SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="kharif">
+                            खरीफ (मानसून, जून-अक्टूबर)
+                          </SelectItem>
+                          <SelectItem value="rabi">
+                            रबी (सर्दी, अक्टूबर-मार्च)
+                          </SelectItem>
+                          <SelectItem value="zaid">
+                            ज़ैद (गर्मी, मार्च-जून)
+                          </SelectItem>
+                          <SelectItem value="year-round">
+                            साल भर खेती
+                          </SelectItem>
+                          <SelectItem value="multiple">कई फसलें</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      toast.info(
+                        normalizedLanguage === "en"
+                          ? "Please select harvest season from the list"
+                          : "कृपया सूची से फसल का मौसम चुनें",
+                      );
+                    }}
+                    className="rounded-l-none bg-water hover:bg-water-dark text-white"
+                  >
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <VoiceInputField
+                id="majorChallenges"
+                value={farmData.majorChallenges || ""}
+                onChange={(value) =>
+                  setFarmData({
+                    ...farmData,
+                    majorChallenges: value,
+                  })
+                }
+                label={
+                  normalizedLanguage === "en"
+                    ? "Major Challenges (water scarcity, pests, etc.)"
+                    : "प्रमुख चुनौतियाँ (जल की कमी, कीट आदि)"
+                }
+                placeholder={
+                  normalizedLanguage === "en"
+                    ? "Describe main farming challenges..."
+                    : "मुख्य खेती चुनौतियों का वर्णन करें..."
+                }
                 language={normalizedLanguage}
               />
 
@@ -1402,7 +1631,7 @@ const Reports: React.FC<ReportsProps> = ({
                   <h3 className="text-lg font-semibold mb-3">
                     {activeContent.farmDetails}
                   </h3>
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="border rounded p-3">
                       <p className="text-sm text-muted-foreground">
                         {activeContent.cropTypes}
@@ -1417,6 +1646,102 @@ const Reports: React.FC<ReportsProps> = ({
                       </p>
                       <p className="font-medium">{farmData.soilType}</p>
                     </div>
+                    {farmData.farmSize && (
+                      <div className="border rounded p-3">
+                        <p className="text-sm text-muted-foreground">
+                          {normalizedLanguage === "en"
+                            ? "Farm Size"
+                            : "खेत का आकार"}
+                        </p>
+                        <p className="font-medium">
+                          {farmData.farmSize}{" "}
+                          {normalizedLanguage === "en"
+                            ? "hectares"
+                            : "हेक्टेयर"}
+                        </p>
+                      </div>
+                    )}
+                    {farmData.irrigationAmount && (
+                      <div className="border rounded p-3">
+                        <p className="text-sm text-muted-foreground">
+                          {normalizedLanguage === "en"
+                            ? "Daily Irrigation"
+                            : "दैनिक सिंचाई"}
+                        </p>
+                        <p className="font-medium">
+                          {farmData.irrigationAmount}{" "}
+                          {normalizedLanguage === "en" ? "liters" : "लीटर"}
+                        </p>
+                      </div>
+                    )}
+                    {farmData.fertilizerType && (
+                      <div className="border rounded p-3">
+                        <p className="text-sm text-muted-foreground">
+                          {activeContent.fertilizerUsage}
+                        </p>
+                        <p className="font-medium">
+                          {farmData.fertilizerType === "organic" &&
+                            (normalizedLanguage === "en"
+                              ? "Organic (Compost, Manure)"
+                              : "जैविक (खाद, कंपोस्ट)")}
+                          {farmData.fertilizerType === "chemical" &&
+                            (normalizedLanguage === "en"
+                              ? "Chemical (NPK, Urea)"
+                              : "रासायनिक (NPK, यूरिया)")}
+                          {farmData.fertilizerType === "mixed" &&
+                            (normalizedLanguage === "en"
+                              ? "Mixed (Organic + Chemical)"
+                              : "मिश्रित (जैविक + रासायनिक)")}
+                          {farmData.fertilizerType === "biofertilizers" &&
+                            (normalizedLanguage === "en"
+                              ? "Biofertilizers"
+                              : "जैव-उर्वरक")}
+                          {farmData.fertilizerType === "none" &&
+                            (normalizedLanguage === "en"
+                              ? "No Fertilizers"
+                              : "कोई उर्वरक नहीं")}
+                        </p>
+                      </div>
+                    )}
+                    {farmData.harvestSeason && (
+                      <div className="border rounded p-3">
+                        <p className="text-sm text-muted-foreground">
+                          {activeContent.harvestSeason}
+                        </p>
+                        <p className="font-medium">
+                          {farmData.harvestSeason === "kharif" &&
+                            (normalizedLanguage === "en"
+                              ? "Kharif (Monsoon, Jun-Oct)"
+                              : "खरीफ (मानसून, जून-अक्टूबर)")}
+                          {farmData.harvestSeason === "rabi" &&
+                            (normalizedLanguage === "en"
+                              ? "Rabi (Winter, Oct-Mar)"
+                              : "रबी (सर्दी, अक्टूबर-मार्च)")}
+                          {farmData.harvestSeason === "zaid" &&
+                            (normalizedLanguage === "en"
+                              ? "Zaid (Summer, Mar-Jun)"
+                              : "ज़ैद (गर्मी, मार्च-जून)")}
+                          {farmData.harvestSeason === "year-round" &&
+                            (normalizedLanguage === "en"
+                              ? "Year-round Cultivation"
+                              : "साल भर खेती")}
+                          {farmData.harvestSeason === "multiple" &&
+                            (normalizedLanguage === "en"
+                              ? "Multiple Harvests"
+                              : "कई फसलें")}
+                        </p>
+                      </div>
+                    )}
+                    {farmData.majorChallenges && (
+                      <div className="border rounded p-3 md:col-span-2">
+                        <p className="text-sm text-muted-foreground">
+                          {activeContent.majorChallenges}
+                        </p>
+                        <p className="font-medium">
+                          {farmData.majorChallenges}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
