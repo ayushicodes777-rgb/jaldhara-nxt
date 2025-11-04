@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
 // Initialize with the API key
-const API_KEY = "sk-proj--isX800Va7Jzqh1gJ9ZBDQyyqvQUqIBfHhg30oBTA-9wTrDogKN2eRHZmfd1kQP8jPij4cyBT3BlbkFJ2V0ft-INRsjwGuDM5_u-W9zAVuovbneaOTvvPDeBIQNw6yneikFgU92n_IB0lq2dCpih-uaO0A";
+const API_KEY = process.env,OPENAI_API_KEY;
 const openai = new OpenAI({
   apiKey: API_KEY,
   dangerouslyAllowBrowser: true // Required for client-side use
